@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wish Upon A Star - Cycle of Wishes</title>
+    <style>
+        /* Basic Reset & Body Styling */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* Prevents scrollbars */
+            background-color: #000010; /* Fallback color */
+            /* Starry Sky Background - Image from Pexels by Graham Holtshausen */
+            /* URL: https://www.pexels.com/photo/milky-way-galaxy-1252890/ */
+            background-image: url('https://images.pexels.com/photos/1252890/pexels-photo-1252890.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+
+        /* Initial Wish Input Section */
+        .input-section {
+            display: flex;
+            align-items: stretch;
+            background-color: rgba(20, 20, 40, 0.75); /* Translucent dark blue */
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 0 25px rgba(173, 216, 230, 0.6); /* Light blue glow */
+            z-index: 100; /* Above animation container initially */
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+
+        #wishTextArea {
+            width: 300px;
+            height: 80px;
+            padding: 15px;
+            border: 1px solid rgba(173, 216, 230, 0.7);
+            border-radius: 10px 0 0 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            resize: none;
+            outline: none;
+        }
+
+        #wishTextArea::placeholder {
+            color: rgba(200, 200, 255, 0.7);
+        }
+
+        #sendButton {
+            padding: 0 25px;
+            background-color: #ff69b4; /* Hot pink */
+            color: white;
+            border: none;
+            border-radius: 0 10px 10px 0;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+
+        #sendButton:hover {
+            background-color: #ff1493; /* Deeper pink */
+        }
+        #sendButton:active {
+            transform: scale(0.95);
+        }
+
+        /* "Send Another Wish" Button */
+        #resetWishButton {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background-color: #8a2be2; /* BlueViolet */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            z-index: 110; /* Above animation container and input */
+            opacity: 0;
+            transform: translateY(20px); /* Start off-screen for slide-up effect */
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+            display: none; /* Initially hidden completely */
+        }
+
+        #resetWishButton:hover {
+            background-color: #7b1fa2; /* Darker purple */
+        }
+        #resetWishButton:active {
+            transform: translateY(20px) scale(0.95); /* Re-apply translateY with scale to prevent flicker if it's not at translateY(0) */
+        }
+        #resetWishButton.visible {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+
+        /* Animation Container for Hearts and Wishes */
+        #animationContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Particles don't block interaction */
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        .particle {
+            position: absolute;
+            top: -60px; /* Start above screen */
+            user-select: none;
+            will-change: transform, opacity; /* Performance hint */
+            opacity: 0; /* Start transparent, animation will fade in */
+        }
+
+        /* Heart Particle Styling & Animation */
+        .heart {
+            font-size: 24px; /* Base heart size */
+            color: #ff69b4;
+            animation-name: fallAndRotate;
+            animation-timing-function: linear;
+            animation-fill-mode: forwards; /* Stay at end state (opacity:0) */
+        }
+
+        @keyframes fallAndRotate {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% { /* Fade in quickly */
+                opacity: 1;
+            }
+            90% { /* Start fading out before end */
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(105vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Wish Text Particle Styling & Animation */
+        .wish-text-particle {
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(255, 105, 180, 0.7), 0 0 3px #000; /* Pink glow for readability */
+            color: #f0f8ff; /* Alice blue - light color */
+            animation-name: floatAndSpread;
+            animation-timing-function: ease-out;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes floatAndSpread {
+            0% {
+                transform: translateY(0) translateX(var(--start-x-offset, 0px)) scale(var(--start-scale, 1)) rotate(var(--start-rotate, 0deg));
+                opacity: 0;
+            }
+            15% { /* Fade in */
+                opacity: var(--max-opacity, 0.9);
+                 transform: translateY(10vh) translateX(calc(var(--start-x-offset, 0px) + var(--drift-x, 0px) * 0.1)) scale(var(--mid-scale, 1.1)) rotate(calc(var(--start-rotate, 0deg) + var(--total-rotate, 0deg) * 0.1));
+            }
+            85% { /* Hold visibility and continue transform */
+                opacity: var(--max-opacity, 0.9);
+            }
+            100% {
+                transform: translateY(105vh) translateX(calc(var(--start-x-offset, 0px) + var(--drift-x, 0px))) scale(var(--end-scale, 0.7)) rotate(calc(var(--start-rotate, 0deg) + var(--total-rotate, 0deg)));
+                opacity: 0;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .input-section {
+                flex-direction: column;
+                padding: 20px;
+                width: 80%;
+            }
+            #wishTextArea {
+                width: calc(100% - 30px); /* Full width minus padding */
+                margin-bottom: 10px;
+                border-radius: 10px;
+            }
+            #sendButton {
+                width: 100%;
+                border-radius: 10px;
+                padding: 15px 0;
+            }
+            #resetWishButton {
+                font-size: 14px;
+                padding: 10px 15px;
+                bottom: 15px;
+                right: 15px;
+            }
+            .heart {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="input-section" id="inputSection">
+        <textarea id="wishTextArea" placeholder="Make a wish..." aria-label="Enter your wish here"></textarea>
+        <button id="sendButton" aria-label="Send your wish">Send</button>
+    </div>
+
+    <button id="resetWishButton" aria-label="Send Another Wish">Send Another Wish</button>
+
+    <div id="animationContainer">
+        <!-- Particles will be dynamically added here -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputSection = document.getElementById('inputSection');
+            const wishTextArea = document.getElementById('wishTextArea');
+            const sendButton = document.getElementById('sendButton');
+            const animationContainer = document.getElementById('animationContainer');
+            const resetWishButton = document.getElementById('resetWishButton');
+
+            let userWish = "";
+            let heartInterval = null;
+            let wishTextInterval = null;
+
+            sendButton.addEventListener('click', () => {
+                const currentWish = wishTextArea.value.trim();
+
+                if (currentWish === "") {
+                    alert("Please type your wish first!");
+                    return;
+                }
+                userWish = currentWish;
+
+                // 1. Make input section disappear
+                inputSection.style.opacity = '0';
+                inputSection.style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                    inputSection.style.display = 'none';
+                }, 500); // Match CSS transition duration
+
+                // 2. Start continuous animations
+                // Clear any existing intervals just in case (shouldn't be necessary if UI flow is correct)
+                if (heartInterval) clearInterval(heartInterval);
+                if (wishTextInterval) clearInterval(wishTextInterval);
+
+                heartInterval = setInterval(createHeartParticle, 350);
+                wishTextInterval = setInterval(() => createWishTextParticle(userWish), 600);
+
+                // Create a small burst initially
+                for(let i=0; i<5; i++) createHeartParticle();
+                for(let i=0; i<3; i++) createWishTextParticle(userWish);
+
+                // 3. Show "Send Another Wish" button
+                resetWishButton.style.display = 'block'; // Make it available in the layout
+                setTimeout(() => { // Timeout to allow display to apply before animating opacity/transform
+                    resetWishButton.classList.add('visible');
+                }, 50); // Small delay
+            });
+
+            resetWishButton.addEventListener('click', () => {
+                // 1. Hide "Send Another Wish" button
+                resetWishButton.classList.remove('visible');
+                // The CSS transition will handle opacity and transform.
+                // Set display: none after transition.
+                setTimeout(() => {
+                    resetWishButton.style.display = 'none';
+                }, 400); // Match CSS transition duration
+
+                // 2. Stop the continuous animations
+                if (heartInterval) {
+                    clearInterval(heartInterval);
+                    heartInterval = null;
+                }
+                if (wishTextInterval) {
+                    clearInterval(wishTextInterval);
+                    wishTextInterval = null;
+                }
+
+                // 3. Remove all currently displayed hearts and wish text instances
+                animationContainer.innerHTML = ''; // Clears all child elements
+
+                // 4. Make the original input box and "Send" button visible again
+                inputSection.style.display = 'flex';
+                // Use a timeout to allow display:flex to apply before transitioning opacity/transform
+                setTimeout(() => {
+                    inputSection.style.opacity = '1';
+                    inputSection.style.transform = 'scale(1)';
+                }, 50); // Small delay
+
+                // 5. Clear the content of the input box
+                wishTextArea.value = "";
+                userWish = ""; // Reset stored wish
+            });
+
+
+            function createParticleElement(typeClass, content = '') {
+                const particle = document.createElement('div');
+                particle.classList.add('particle', typeClass);
+                if (content) {
+                    particle.textContent = content;
+                }
+                particle.style.left = Math.random() * 95 + 'vw'; // Random horizontal start (0-95vw)
+                return particle;
+            }
+
+            function createHeartParticle() {
+                const heart = createParticleElement('heart', '💖');
+                const duration = Math.random() * 2 + 3; // Animation duration 3s to 5s
+                heart.style.animationDuration = duration + 's';
+                heart.style.fontSize = (Math.random() * 10 + 18) + 'px'; // Random size: 18px to 28px
+                animationContainer.appendChild(heart);
+                setTimeout(() => {
+                    heart.remove();
+                }, duration * 1000 + 100);
+            }
+
+            function createWishTextParticle(text) {
+                if (!text) return;
+                const wishTextElement = createParticleElement('wish-text-particle', text);
+                const duration = Math.random() * 3 + 5; // Animation duration 5s to 8s
+                wishTextElement.style.animationDuration = duration + 's';
+
+                const scale = Math.random() * 0.5 + 0.8;
+                wishTextElement.style.setProperty('--start-scale', scale);
+                wishTextElement.style.setProperty('--mid-scale', scale * (Math.random() > 0.5 ? 1.1 : 0.95));
+                wishTextElement.style.setProperty('--end-scale', scale * (Math.random() * 0.3 + 0.5));
+
+                const baseFontSize = window.innerWidth < 600 ? 14 : 18;
+                wishTextElement.style.fontSize = (Math.random() * (baseFontSize*0.5) + baseFontSize*0.8) + 'px';
+                wishTextElement.style.setProperty('--max-opacity', (Math.random() * 0.3 + 0.7).toFixed(2));
+
+                const driftX = (Math.random() - 0.5) * 200;
+                wishTextElement.style.setProperty('--drift-x', `${driftX}px`);
+                const totalRotate = (Math.random() - 0.5) * 60;
+                wishTextElement.style.setProperty('--total-rotate', `${totalRotate}deg`);
+                wishTextElement.style.setProperty('--start-rotate', `${(Math.random() - 0.5) * 10}deg`);
+                wishTextElement.style.setProperty('--start-x-offset', `${(Math.random() - 0.5) * 50}px`);
+
+                animationContainer.appendChild(wishTextElement);
+                setTimeout(() => {
+                    wishTextElement.remove();
+                }, duration * 1000 + 100);
+            }
+        });
+    </script>
+
+</body>
+</html>
